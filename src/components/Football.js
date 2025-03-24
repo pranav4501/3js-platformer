@@ -21,9 +21,9 @@ export default class Football {
         
         // Try different possible paths to the model
         const possiblePaths = [
-            '../soccer_ball/scene.gltf',
-            '../../src/soccer_ball/scene.gltf',
-            '/src/soccer_ball/scene.gltf'
+            '/assets/soccer_ball/scene.gltf',
+            '/soccer_ball/scene.gltf',
+            './soccer_ball/scene.gltf'
         ];
         
         let loadAttempt = 0;
