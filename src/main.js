@@ -1,6 +1,22 @@
 import * as THREE from 'three';
 // import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+// Import Models
+import GameModel from './models/GameModel.js';
+import BallModel from './models/BallModel.js';
+import ObstacleModel from './models/ObstacleModel.js';
+import FieldModel from './models/FieldModel.js';
+
+// Import Views
+import SceneView from './views/SceneView.js';
+import BallView from './views/BallView.js';
+import ObstacleView from './views/ObstacleView.js';
+import FieldView from './views/FieldView.js';
+import UIView from './views/UIView.js';
+
+// Import Controllers
+import GameController from './controllers/GameController.js';
+
 // Initialize the scene
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb); // Sky blue background
@@ -1654,5 +1670,144 @@ function animateMessi(deltaTime) {
         });
     }
 }
+
+// Initialize the game
+function initGame() {
+    // Create models
+    const gameModel = new GameModel();
+    const ballModel = new BallModel();
+    const fieldModel = new FieldModel();
+    
+    // Create obstacle models
+    const obstacleModels = createObstacleModels();
+    
+    // Create views
+    const sceneView = new SceneView();
+    const ballView = new BallView(sceneView.scene);
+    const fieldView = new FieldView(sceneView.scene, fieldModel);
+    const obstacleView = new ObstacleView(sceneView.scene, obstacleModels);
+    const uiView = new UIView();
+    
+    // Create game controller
+    const gameController = new GameController(
+        gameModel,
+        ballModel,
+        obstacleModels,
+        fieldModel,
+        sceneView,
+        ballView,
+        obstacleView,
+        fieldView,
+        uiView
+    );
+    
+    // Initialize the game
+    gameController.init();
+}
+
+function createObstacleModels() {
+    // Define field boundaries for obstacle placement
+    const corridorWidth = 10;
+    const fieldLength = 60;
+    
+    // Define min/max coordinates for obstacle placement
+    const minX = -corridorWidth / 2 + 1;
+    const maxX = corridorWidth / 2 - 1;
+    const minZ = -5;
+    const maxZ = -fieldLength + 5;
+    
+    const obstacleModels = [];
+    
+    // Obstacle 1: Left-right movement
+    obstacleModels.push(new ObstacleModel(1, 
+        { x: -3, y: 1, z: -8 },
+        { width: 2, height: 2, depth: 0.5 },
+        {
+            type: 'horizontal',
+            speed: 2,
+            startX: minX,
+            endX: -1,
+            direction: 1
+        }
+    ));
+    
+    // Obstacle 2: Right-left movement
+    obstacleModels.push(new ObstacleModel(2, 
+        { x: 3, y: 1, z: -15 },
+        { width: 2, height: 2, depth: 0.5 },
+        {
+            type: 'horizontal',
+            speed: 1.5,
+            startX: 1,
+            endX: maxX,
+            direction: 1
+        }
+    ));
+    
+    // Obstacle 3: Diagonal movement
+    obstacleModels.push(new ObstacleModel(3, 
+        { x: 0, y: 1, z: -22 },
+        { width: 2, height: 2, depth: 0.5 },
+        {
+            type: 'diagonal',
+            speed: 2.5,
+            startX: minX,
+            endX: maxX,
+            startZ: -20,
+            endZ: -24,
+            direction: 1
+        }
+    ));
+    
+    // Obstacle 4: Circular movement
+    obstacleModels.push(new ObstacleModel(4, 
+        { x: -3, y: 1, z: -30 },
+        { width: 2, height: 2, depth: 0.5 },
+        {
+            type: 'circular',
+            speed: 1,
+            radius: 2,
+            direction: 1
+        }
+    ));
+    
+    // Obstacle 5: Up-down floating movement
+    obstacleModels.push(new ObstacleModel(5, 
+        { x: 2, y: 1, z: -38 },
+        { width: 2, height: 2, depth: 0.5 },
+        {
+            type: 'vertical',
+            speed: 1,
+            startY: 0.5,
+            endY: 3,
+            direction: 1
+        }
+    ));
+    
+    // Obstacle 6: Zigzag movement
+    obstacleModels.push(new ObstacleModel(6, 
+        { x: -1, y: 1, z: -45 },
+        { width: 1.5, height: 2, depth: 0.5 },
+        {
+            type: 'zigzag',
+            speed: 3,
+            amplitude: 3,
+            startZ: -43,
+            endZ: -47,
+            direction: 1
+        }
+    ));
+    
+    // Obstacle 7: Static obstacle
+    obstacleModels.push(new ObstacleModel(7, 
+        { x: 1, y: 1, z: -52 },
+        { width: 4, height: 1, depth: 0.5 }
+    ));
+    
+    return obstacleModels;
+}
+
+// Start the game
+initGame();
 
 animate(0); 
