@@ -32,7 +32,3 @@ build/
 *.swp
 *.swo
 .DS_Store 
-
-# 3D models binary files
-src/soccer_ball/scene.bin
-src/soccer_ball/textures/*.png
