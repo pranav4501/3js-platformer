@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import FootballPlayer from './FootballPlayer.js';
+import WindBlower from './WindBlower.js';
 
 /**
  * Creates and manages obstacles in the game
@@ -9,6 +10,15 @@ export default class ObstacleSystem {
         this.scene = scene;
         this.obstacles = [];
         this.players = []; // Track the player objects for animation updates
+        this.windBlowers = []; // Track wind blowers for special updates
+        
+        // Field boundaries to ensure obstacles are within playable area
+        this.corridorWidth = 10;
+        this.fieldLength = 60;
+        this.minX = -this.corridorWidth/2 + 1;  // Left edge of field + buffer
+        this.maxX = this.corridorWidth/2 - 1;   // Right edge of field - buffer
+        this.minZ = -45;  // Near the goal but not too close
+        this.maxZ = 0;    // Up to the start area
     }
 
     /**
@@ -24,14 +34,6 @@ export default class ObstacleSystem {
             roughness: 0.7,
             visible: false // Hide the debug geometry
         });
-        
-        // Get field boundaries to ensure obstacles are within playable area
-        const corridorWidth = 10;
-        const fieldLength = 60;
-        const minX = -corridorWidth/2 + 1;  // Left edge of field + buffer
-        const maxX = corridorWidth/2 - 1;   // Right edge of field - buffer
-        const minZ = -45;  // Near the goal but not too close
-        const maxZ = 0;    // Up to the start area
         
         // Create football player obstacles with movement paths - increased speeds
         
@@ -173,6 +175,30 @@ export default class ObstacleSystem {
         this.obstacles.push(player7Mesh);
         this.players.push(player7);
         
+        // Add wind blower obstacles
+        
+        // Wind blower on the left edge blowing right
+        const windBlower1 = new WindBlower(
+            this.scene,
+            new THREE.Vector3(-5, 0.5, -18),
+            new THREE.Vector3(1, 0, 0), // Blowing to the right
+            15, // Force
+            2,  // Width
+            1.5 // Height
+        );
+        this.windBlowers.push(windBlower1);
+        
+        // Wind blower on the right edge blowing left
+        const windBlower2 = new WindBlower(
+            this.scene,
+            new THREE.Vector3(5, 0.5, -32),
+            new THREE.Vector3(-1, 0, 0), // Blowing to the left
+            15, // Force
+            2,  // Width
+            1.5 // Height
+        );
+        this.windBlowers.push(windBlower2);
+        
         return this.obstacles;
     }
 
@@ -180,9 +206,16 @@ export default class ObstacleSystem {
      * Clear all obstacles from the scene
      */
     clearObstacles() {
+        // Remove normal obstacles
         this.obstacles.forEach(obstacle => this.scene.remove(obstacle));
         this.obstacles = [];
         this.players = [];
+        
+        // Remove wind blowers
+        this.windBlowers.forEach(blower => {
+            this.scene.remove(blower.getMesh());
+        });
+        this.windBlowers = [];
     }
 
     /**
@@ -192,6 +225,11 @@ export default class ObstacleSystem {
         // Update player animations
         this.players.forEach(player => {
             player.update(deltaTime);
+        });
+        
+        // Update wind blowers
+        this.windBlowers.forEach(blower => {
+            blower.update(deltaTime);
         });
         
         // Update obstacle positions
@@ -251,10 +289,10 @@ export default class ObstacleSystem {
                     break;
                     
                 case 'vertical':
-                    // Up-down floating movement
+                    // Up-down movement
                     obstacle.position.y += movement.speed * movement.direction * deltaTime;
                     
-                    // Change direction at height limits
+                    // Change direction at boundaries
                     if (obstacle.position.y >= movement.endY) {
                         obstacle.position.y = movement.endY;
                         movement.direction = -1;
@@ -265,30 +303,55 @@ export default class ObstacleSystem {
                     break;
                     
                 case 'zigzag':
-                    // Zigzag movement along x axis while moving forward
+                    // Zigzag movement - bounce between left and right of centerline
                     obstacle.position.x += movement.speed * movement.direction * deltaTime;
+                    obstacle.position.z -= movement.speed * 0.5 * deltaTime; // Always move forward
+                    
+                    // Keep within field boundaries for Z axis
+                    if (obstacle.position.z < this.minZ) {
+                        // Reset to start position with random offset
+                        obstacle.position.z = -5 - Math.random() * 5;
+                        obstacle.position.x = -2 + Math.random() * 4;
+                    }
                     
                     // Change direction at boundaries
                     if (obstacle.position.x >= movement.rightX) {
                         obstacle.position.x = movement.rightX;
                         movement.direction = -1;
-                        // Rotate to face new direction
-                        obstacle.rotation.y = -Math.PI / 4; // Face left diagonal
+                        // Rotate to face new diagonal direction
+                        obstacle.rotation.y = -Math.PI / 4;
                     } else if (obstacle.position.x <= movement.leftX) {
                         obstacle.position.x = movement.leftX;
                         movement.direction = 1;
-                        // Rotate to face new direction
-                        obstacle.rotation.y = Math.PI / 4; // Face right diagonal
+                        // Rotate to face new diagonal direction
+                        obstacle.rotation.y = Math.PI / 4;
                     }
                     break;
             }
         });
     }
+    
+    /**
+     * Apply wind forces from all wind blowers to the ball
+     */
+    applyWindForces(ball, ballPhysics) {
+        // For each wind blower, check if ball is in range and apply force
+        this.windBlowers.forEach(blower => {
+            blower.applyWindForce(ball, ballPhysics);
+        });
+    }
 
     /**
-     * Get the list of obstacles
+     * Get all obstacle meshes for collision detection
      */
     getObstacles() {
         return this.obstacles;
+    }
+    
+    /**
+     * Get all wind blowers
+     */
+    getWindBlowers() {
+        return this.windBlowers;
     }
 } 
