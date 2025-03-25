@@ -76,8 +76,8 @@ export default class CollisionSystem {
             const energyConservation = 0.9; // High conservation to prevent slowing down too much
             ballPhysics.velocity.multiplyScalar(energyConservation);
             
-            // Add upward component to prevent floor sticking
-            ballPhysics.velocity.y = Math.max(ballPhysics.velocity.y, 1.0);
+            // Add upward component to prevent floor sticking (reduced from 1.0 to 0.4)
+            ballPhysics.velocity.y = Math.max(ballPhysics.velocity.y, 0.4);
             
             // Add random slight variance to make bounces feel natural
             const randomFactor = 0.05; // Very small randomness for predictable bounces
@@ -197,25 +197,30 @@ export default class CollisionSystem {
         const ballWorldPos = new THREE.Vector3();
         ball.getWorldPosition(ballWorldPos);
         
+        // Get ball radius (assume it's the same as in the SoccerGoal class)
+        const ballRadius = 0.5;
+        
         // Get the goal trigger box in world space
         const goalBox = new THREE.Box3().setFromObject(goalTrigger);
         
-        // Check if the ball's center is inside the goal trigger box
-        return goalBox.containsPoint(ballWorldPos);
+        // Check if the ball's center is inside the goal trigger box OR if the ball intersects the goal box
+        // Using sphere-box intersection test which is more accurate than just checking the center point
+        return goalBox.containsPoint(ballWorldPos) || goalBox.intersectsSphere(new THREE.Sphere(ballWorldPos, ballRadius));
     }
 
     /**
      * Check if the ball is out of bounds
      */
     checkOutOfBounds(ball, boundaries) {
-        const { minX, maxX, minZ, maxZ } = boundaries;
+        const { minX, maxX, minZ, maxZ, maxY } = boundaries;
         const ballPosition = ball.position;
         
         return (
             ballPosition.x < minX || 
             ballPosition.x > maxX || 
             ballPosition.z < minZ ||
-            ballPosition.z > maxZ
+            ballPosition.z > maxZ ||
+            ballPosition.y > maxY  // Check if above the ceiling
         );
     }
 
@@ -261,5 +266,116 @@ export default class CollisionSystem {
             }
         }
         return cameraPosition;
+    }
+
+    /**
+     * Check for collisions between the ball and the goal frame
+     */
+    checkGoalFrameCollision(ball, ballPhysics, goalGroup, gameProperties) {
+        // Loop through all children of the goal group (which include the frame poles)
+        for (let i = 0; i < goalGroup.children.length; i++) {
+            const child = goalGroup.children[i];
+            
+            // Skip the goal trigger and nets (only check collision with solid parts)
+            if (child === goalGroup.getObjectByName('trigger') || child.userData.isNet) {
+                continue;
+            }
+            
+            // Only handle collisions with cylinders (the goal posts and crossbar)
+            if (child.geometry && child.geometry.type === 'CylinderGeometry') {
+                // Get ball position
+                const ballPosition = ball.position.clone();
+                
+                // Get world position and size of the post
+                const postWorldPosition = new THREE.Vector3();
+                child.getWorldPosition(postWorldPosition);
+                
+                // Convert cylinder to a line segment for collision detection
+                const axis = new THREE.Vector3(0, 1, 0);  // Default cylinder axis
+                // Apply the object's rotation to get the actual axis
+                axis.applyQuaternion(child.getWorldQuaternion(new THREE.Quaternion()));
+                
+                // Calculate half-length of the cylinder
+                const halfLength = child.geometry.parameters.height / 2;
+                
+                // Get points at the ends of the cylinder
+                const point1 = postWorldPosition.clone().add(axis.clone().multiplyScalar(halfLength));
+                const point2 = postWorldPosition.clone().add(axis.clone().multiplyScalar(-halfLength));
+                
+                // Calculate closest point on the line segment to the ball center
+                const closestPoint = this.closestPointOnLineSegment(ballPosition, point1, point2);
+                
+                // Get the distance from the ball center to the closest point on the post
+                const distance = ballPosition.distanceTo(closestPoint);
+                
+                // Check for collision (distance < ball radius + post radius)
+                const postRadius = child.geometry.parameters.radiusTop; // Assuming uniform radius
+                if (distance < ballPhysics.radius + postRadius) {
+                    // Calculate collision normal (direction from closest point to ball)
+                    const normal = ballPosition.clone().sub(closestPoint).normalize();
+                    
+                    // Calculate impact speed
+                    const impactSpeed = Math.abs(ballPhysics.velocity.dot(normal));
+                    
+                    // Apply collision response
+                    this.handleGoalPostCollision(ball, ballPosition, ballPhysics, normal, impactSpeed, gameProperties);
+                    
+                    // Only handle one collision per frame to avoid physics instability
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Find the closest point on a line segment to a point
+     */
+    closestPointOnLineSegment(point, lineStart, lineEnd) {
+        const line = lineEnd.clone().sub(lineStart);
+        const len = line.length();
+        const lineDir = line.clone().divideScalar(len);
+        
+        // Calculate projection of point onto line
+        const projection = point.clone().sub(lineStart).dot(lineDir);
+        
+        // Clamp projection to line segment
+        const clampedProjection = Math.max(0, Math.min(len, projection));
+        
+        // Calculate the closest point
+        return lineStart.clone().add(lineDir.clone().multiplyScalar(clampedProjection));
+    }
+
+    /**
+     * Handle collision between the ball and a goal post
+     */
+    handleGoalPostCollision(ball, ballPosition, ballPhysics, normal, impactSpeed, gameProperties) {
+        // Move the ball outside the post with a small margin
+        const pushDistance = ballPhysics.radius + 0.1 - ballPosition.clone().dot(normal);
+        if (pushDistance > 0) {
+            ball.position.add(normal.clone().multiplyScalar(pushDistance));
+        }
+        
+        // Calculate the velocity component along the collision normal
+        const velocityAlongNormal = ballPhysics.velocity.dot(normal);
+        
+        // Only bounce if the ball is moving toward the post
+        if (velocityAlongNormal < 0) {
+            // Reflect the velocity component along the normal
+            ballPhysics.velocity.sub(normal.clone().multiplyScalar(velocityAlongNormal * 2.0 * ballPhysics.elasticity));
+            
+            // Add some random variation to make bounces feel more natural
+            const randomFactor = 0.1;
+            ballPhysics.velocity.x += (Math.random() - 0.5) * randomFactor;
+            ballPhysics.velocity.z += (Math.random() - 0.5) * randomFactor;
+            
+            // Add visual feedback for collision
+            const particleCount = Math.floor(5 + impactSpeed / 2);
+            this.createCollisionEffect(ball.position.clone(), normal, particleCount);
+            
+            // Add screen shake for hard impacts
+            if (impactSpeed > 5) {
+                this.shakeCamera(impactSpeed / 10);
+            }
+        }
     }
 } 

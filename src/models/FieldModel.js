@@ -16,12 +16,16 @@ export default class FieldModel {
         // Field position
         this.position = { x: 0, y: -0.49, z: -25 };
         
+        // Ceiling height (max height the ball can go)
+        this.ceilingHeight = 10;
+        
         // Boundaries for detecting out of bounds
         this.boundaries = {
             minX: -this.width / 2,
             maxX: this.width / 2,
             minZ: -this.length / 2 - this.position.z,
-            maxZ: this.length / 2 - this.position.z
+            maxZ: this.length / 2 - this.position.z,
+            maxY: this.ceilingHeight // Maximum height (ceiling)
         };
         
         // Goal position (relative to field center)
@@ -36,7 +40,8 @@ export default class FieldModel {
         return position.x < this.boundaries.minX || 
                position.x > this.boundaries.maxX ||
                position.z < this.boundaries.minZ || 
-               position.z > this.boundaries.maxZ;
+               position.z > this.boundaries.maxZ ||
+               position.y > this.boundaries.maxY; // Check if above ceiling
     }
 
     isInGoalArea(position) {

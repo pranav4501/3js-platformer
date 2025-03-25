@@ -97,12 +97,14 @@ export default class FootballField {
     getBoundaries() {
         const goalPosition = new THREE.Vector3(0, 0, -50);
         const goalDepth = 1.5;
+        const ceilingHeight = 3; // Ceiling height limit
         
         return {
             minX: -this.fieldWidth/2,        // Left edge of field
             maxX: this.fieldWidth/2,         // Right edge of field
             minZ: goalPosition.z - goalDepth - 1, // Behind goal
-            maxZ: 5                          // Start area (don't go backward)
+            maxZ: 5,                         // Start area (don't go backward)
+            maxY: ceilingHeight              // Ceiling height
         };
     }
 

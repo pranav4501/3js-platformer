@@ -50,8 +50,8 @@ export default class Game {
             forwardAcceleration: 40.0,   // Acceleration for forward movement
             backwardAcceleration: 20.0,  // Acceleration for backward movement
             lateralAcceleration: 35.0,   // Acceleration for side-to-side movement
-            obstacleRepulsionForce: 30.0, // Force for obstacle collisions
-            jumpForce: 12.0,            // Force applied when jumping
+            obstacleRepulsionForce: 20.0, // Force for obstacle collisions (reduced from 30.0)
+            jumpForce: 7.4,             // Force applied when jumping (reduced by factor of 5, from 12.0)
             jumpCooldown: 0.3           // Time in seconds before player can jump again
         };
         
@@ -270,6 +270,14 @@ export default class Game {
             this.football.getMesh(),
             this.ballPhysics,
             this.gameState.obstacles,
+            this.gameProperties
+        );
+        
+        // Check for goal frame collisions
+        this.collisionSystem.checkGoalFrameCollision(
+            this.football.getMesh(),
+            this.ballPhysics,
+            this.goal.getGroup(),
             this.gameProperties
         );
         
