@@ -97,7 +97,7 @@ export default class FootballField {
     getBoundaries() {
         const goalPosition = new THREE.Vector3(0, 0, -50);
         const goalDepth = 1.5;
-        const ceilingHeight = 3; // Ceiling height limit
+        const ceilingHeight = 10; // Ceiling height limit updated to match the models
         
         return {
             minX: -this.fieldWidth/2,        // Left edge of field
@@ -120,5 +120,16 @@ export default class FootballField {
      */
     getFloor() {
         return this.floorGroup.children.find(child => !child.userData.isLine);
+    }
+
+    /**
+     * Get field properties for other components
+     */
+    getProperties() {
+        return {
+            width: this.fieldWidth,
+            length: this.fieldLength,
+            position: this.floorGroup.position,
+        };
     }
 } 
