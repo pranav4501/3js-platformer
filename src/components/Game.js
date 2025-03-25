@@ -249,6 +249,9 @@ export default class Game {
         // Update obstacles
         this.obstacleSystem.updateObstacles(deltaTime);
         
+        // Apply wind forces from wind blowers
+        this.obstacleSystem.applyWindForces(this.football.getMesh(), this.ballPhysics);
+        
         // Update ball physics
         this.ballPhysics.update(
             deltaTime, 
