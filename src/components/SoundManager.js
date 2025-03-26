@@ -164,7 +164,7 @@ export default class SoundManager {
             (buffer) => {
                 music.setBuffer(buffer);
                 music.setLoop(true);
-                music.setVolume(this.masterVolume * 0.4); // Lower volume for background music
+                music.setVolume(this.masterVolume * 0.7); // Lower volume for background music
                 this.backgroundMusic = music;
                 console.log('Background music loaded');
                 

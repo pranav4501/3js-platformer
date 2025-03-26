@@ -166,26 +166,27 @@ export default class Game {
                 break;
                 
             case 'ground':
-                // Play bounce sound based on velocity
-                if (velocity > 3 && currentTime - this.soundCooldowns.bounce > 200) {
-                    const volume = Math.min(Math.abs(velocity) / 10, 1);
-                    this.soundManager.playAt('bounce', position, volume * 0.6);
+                // Play bounce sound based on velocity - lowered threshold from 3 to 1.5
+                if (velocity > 1.5 && currentTime - this.soundCooldowns.bounce > 200) {
+                    // Adjusted scale for lower velocities to still have good volume
+                    const volume = Math.min(Math.abs(velocity) / 8, 1);
+                    this.soundManager.playAt('bounce', position, volume * 1.0); 
                     this.soundCooldowns.bounce = currentTime;
                 }
                 break;
                 
             case 'wall':
-                // Play bounce sound with different pitch for walls
-                if (velocity > 2 && currentTime - this.soundCooldowns.bounce > 150) {
-                    const volume = Math.min(Math.abs(velocity) / 8, 1);
-                    this.soundManager.playAt('bounce', position, volume * 0.5);
+                // Play bounce sound with different pitch for walls - lowered threshold from 2 to 1
+                if (velocity > 1 && currentTime - this.soundCooldowns.bounce > 150) {
+                    const volume = Math.min(Math.abs(velocity) / 6, 1);
+                    this.soundManager.playAt('bounce', position, volume * 0.85);
                     this.soundCooldowns.bounce = currentTime;
                 }
                 break;
                 
             case 'goal_frame':
-                // Play special goal post sound
-                this.soundManager.playAt('kick', position, 0.4);
+                // Play special goal post sound - increased volume from 0.4 to 0.6
+                this.soundManager.playAt('kick', position, 0.6);
                 break;
         }
     }
@@ -334,7 +335,7 @@ export default class Game {
             
             // Play goal sound only if it hasn't been played yet this round
             if (!this.gameState.goalSoundPlayed) {
-                this.soundManager.play('goal', 1.0);
+                this.soundManager.play('goal', 1.5);
                 this.gameState.goalSoundPlayed = true;
             }
         }
