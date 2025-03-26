@@ -11,6 +11,7 @@ export default class GameState {
         this.lastCameraPosition = null; // Store camera position when game ends
         this.lastCameraLookAt = null;   // Store look target when game ends
         this.obstacles = [];
+        this.goalSoundPlayed = false;
     }
 
     reset() {
@@ -21,6 +22,7 @@ export default class GameState {
         this.fallStartTime = 0;
         this.lastCameraPosition = null;
         this.lastCameraLookAt = null;
+        this.goalSoundPlayed = false;
     }
 
     startFalling() {

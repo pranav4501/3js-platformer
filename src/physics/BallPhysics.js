@@ -16,15 +16,29 @@ export default class BallPhysics {
         this.airFriction = 0.98; // Lower friction when in air
         this.elasticity = 0.8; // Bounce factor
         this.radius = 0.5; // Ball radius
+        
+        // Collision callback
+        this.collisionCallback = null;
+        
+        // Track previous ground state for collision detection
+        this.wasOnGround = false;
     }
 
     reset() {
         this.velocity.set(0, 0, 0);
         this.onGround = false;
+        this.wasOnGround = false;
     }
 
     applyForce(force) {
         this.velocity.add(force);
+    }
+
+    /**
+     * Set callback function for collision sounds
+     */
+    setCollisionCallback(callback) {
+        this.collisionCallback = callback;
     }
 
     update(deltaTime, ball, gameState, gameProperties, keys, floor) {
@@ -62,6 +76,9 @@ export default class BallPhysics {
 
         // Add ball rotation based on movement
         this.updateBallRotation(ball, deltaTime);
+
+        // Track previous ground state
+        this.wasOnGround = this.onGround;
 
         // Handle ground collision
         this.handleGroundCollision(ball, floor);
@@ -158,8 +175,16 @@ export default class BallPhysics {
             ball.position.y = floorY + this.radius + 0.01; // Small offset to prevent jittering
             
             if (this.velocity.y < 0) {
+                // Calculate impact velocity for bounce sound
+                const impactVelocity = Math.abs(this.velocity.y);
+                
                 // Bounce when hitting the ground
                 this.velocity.y = -this.velocity.y * this.elasticity;
+                
+                // Trigger sound callback if available and landing from air
+                if (this.collisionCallback && !this.wasOnGround && impactVelocity > 2) {
+                    this.collisionCallback('ground', ball.position, impactVelocity);
+                }
             }
             
             this.onGround = true;

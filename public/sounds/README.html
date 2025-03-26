@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sound Files Instructions</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    code {
+      background-color: #f5f5f5;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .note {
+      background-color: #fffde7;
+      border-left: 4px solid #ffd600;
+      padding: 10px 15px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sound Files for 3D Soccer Game</h1>
+  
+  <p>This game requires the following sound files to be placed in the <code>/public/sounds/</code> directory:</p>
+  
+  <ul>
+    <li><code>bounce.mp3</code> - Sound when the ball bounces</li>
+    <li><code>kick.mp3</code> - Sound when kicking the ball</li>
+    <li><code>ball_roll.mp3</code> - Sound of the ball rolling</li>
+    <li><code>goal.mp3</code> - Celebration sound when scoring a goal</li>
+    <li><code>whistle.mp3</code> - Referee whistle for out of bounds</li>
+    <li><code>player_collision.mp3</code> - Sound for player collisions</li>
+    <li><code>wind.mp3</code> - Wind blower sound effect</li>
+    <li><code>button_click.mp3</code> - UI button click sound</li>
+    <li><code>jump.mp3</code> - Sound when jumping</li>
+    <li><code>game_music.mp3</code> - Background music</li>
+  </ul>
+  
+  <h2>Option 1: Generate Sound Files in Browser</h2>
+  
+  <h2>Option 2: Create Empty Placeholder Files</h2>
+  <p>If you just want the game to run without sounds, you can create empty placeholder files:</p>
+  
+  <pre><code>cd public/sounds
+touch bounce.mp3 kick.mp3 ball_roll.mp3 goal.mp3 whistle.mp3 player_collision.mp3 wind.mp3 button_click.mp3 jump.mp3 game_music.mp3</code></pre>
+  
+  <h2>Option 3: Find Free Sound Effects Online</h2>
+  <p>You can download free sound effects from these websites:</p>
+  
+  <ul>
+    <li><a href="https://freesound.org/" target="_blank">Freesound.org</a> - Collaborative database of Creative Commons Licensed sounds</li>
+    <li><a href="https://pixabay.com/sound-effects/" target="_blank">Pixabay</a> - Free sound effects</li>
+    <li><a href="https://www.zapsplat.com/" target="_blank">Zapsplat</a> - Free sound effects library</li>
+  </ul>
+  
+  <p>Download the sounds and rename them to match the required filenames.</p>
+  
+  <div class="note">
+    <strong>Note:</strong> The game will still function without sound files, but you might see console errors. 
+    To prevent this, make sure to at least create empty placeholder files with the correct names.
+  </div>
+  
+  <h2>Advanced: Generate Sound Files with FFmpeg</h2>
+  <p>If you have FFmpeg installed, you can create silent 1-second audio files:</p>
+  
+  <pre><code>ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t 1 -q:a 9 -acodec libmp3lame bounce.mp3</code></pre>
+  
+  <p>Repeat for each needed sound file.</p>
+</body>
+</html> 
