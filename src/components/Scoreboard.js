@@ -19,15 +19,18 @@ export default class Scoreboard {
         const scoreboardHeight = 5;
         const scoreboardDepth = 0.5;
         
-        // Position behind the goal, outside bounds
+        // Position above the goal stand
         const scoreboardPosition = new THREE.Vector3(
             position.x,
-            position.y + scoreboardHeight/2 + 1,
-            position.z - length/2 - buffer - 20 // Well behind the goal
+            position.y + 11, // Raised higher to be above the stadium stands (previously +scoreboardHeight/2 + 1)
+            position.z - length/2 - buffer - 15 // Positioned directly above the stands (previously -20)
         );
         
         // Set scoreboard group position
         this.scoreboardGroup.position.copy(scoreboardPosition);
+        
+        // Rotate slightly downward to face the pitch better
+        this.scoreboardGroup.rotation.x = Math.PI * 0.05; // Slight downward tilt
         
         // Main scoreboard frame - now vintage aged wood look
         const frameGeometry = new THREE.BoxGeometry(scoreboardWidth, scoreboardHeight, scoreboardDepth);

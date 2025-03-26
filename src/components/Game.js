@@ -13,6 +13,7 @@ import StadiumWalls from './StadiumWalls.js';
 import Scoreboard from './Scoreboard.js';
 import SoundManager from './SoundManager.js';
 import TouchControls from './TouchControls.js';
+import CloudSystem from './CloudSystem.js';
 
 /**
  * Main game class that coordinates all game systems
@@ -138,6 +139,9 @@ export default class Game {
         // Create touch controls for mobile devices
         this.touchControls = new TouchControls(this.handleTouchJump.bind(this), this.camera);
         
+        // Create cloud system
+        this.cloudSystem = new CloudSystem(this.scene);
+        
         // Simulate touch inputs by updating keyboard inputs
         if (this.touchControls && this.touchControls.isActive()) {
             this.setupTouchKeyboardEmulation();
@@ -146,7 +150,7 @@ export default class Game {
         // Set collision callback for sounds
         this.collisionSystem.setCollisionCallback(this.handleCollisionSound.bind(this));
         
-        // Set ball physics collision callback
+        // Set collision callback for ball physics
         this.ballPhysics.setCollisionCallback(this.handleCollisionSound.bind(this));
     }
     
@@ -512,6 +516,11 @@ export default class Game {
         
         // Animate goal net
         this.goal.animateNet(currentTime);
+        
+        // Update clouds
+        if (this.cloudSystem) {
+            this.cloudSystem.update(deltaTime);
+        }
         
         // Render scene
         this.renderer.render(this.scene, this.camera);

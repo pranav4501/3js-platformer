@@ -73,9 +73,9 @@ export default class ObstacleSystem {
             endX: 3,
             direction: -1 // Start moving left
         };
-        this.scene.add(player2Mesh);
-        this.obstacles.push(player2Mesh);
-        this.players.push(player2);
+        // this.scene.add(player2Mesh);
+        // this.obstacles.push(player2Mesh);
+        // this.players.push(player2);
         
         // Obstacle 3 - Diagonal movement
         const player3 = new FootballPlayer(
@@ -96,9 +96,9 @@ export default class ObstacleSystem {
             progress: 0,
             direction: 1 // Starting direction
         };
-        this.scene.add(player3Mesh);
-        this.obstacles.push(player3Mesh);
-        this.players.push(player3);
+        // this.scene.add(player3Mesh);
+        // this.obstacles.push(player3Mesh);
+        // this.players.push(player3);
         
         // Obstacle 4 - Circular movement
         const player4 = new FootballPlayer(
@@ -117,9 +117,9 @@ export default class ObstacleSystem {
             radius: 2,
             angle: 0
         };
-        this.scene.add(player4Mesh);
-        this.obstacles.push(player4Mesh);
-        this.players.push(player4);
+        // this.scene.add(player4Mesh);
+        // this.obstacles.push(player4Mesh);
+        // this.players.push(player4);
         
         // Obstacle 5 - Up-down movement (floating)
         const player5 = new FootballPlayer(
@@ -137,9 +137,9 @@ export default class ObstacleSystem {
             endY: 1.5,
             direction: 1 // 1 for up, -1 for down
         };
-        this.scene.add(player5Mesh);
-        this.obstacles.push(player5Mesh);
-        this.players.push(player5);
+        // this.scene.add(player5Mesh);
+        // this.obstacles.push(player5Mesh);
+        // this.players.push(player5);
         
         // Obstacle 6 - Zigzag movement
         const player6 = new FootballPlayer(
@@ -158,9 +158,9 @@ export default class ObstacleSystem {
             direction: 1,
             amplitude: 2
         };
-        this.scene.add(player6Mesh);
-        this.obstacles.push(player6Mesh);
-        this.players.push(player6);
+        // this.scene.add(player6Mesh);
+        // this.obstacles.push(player6Mesh);
+        // this.players.push(player6);
         
         // Obstacle 7 - Static (doesn't move)
         const player7 = new FootballPlayer(
