@@ -1,7 +1,8 @@
 # To DO
 
 ## Environment
-- [ ] simple scoreboard behind the goal post
+- [x] simple scoreboard behind the goal post
+- [x] refactored scoreboard into a separate component
 - [ ] ball is going below the turf after collisions
 - [ ] add simple fans rendering
 - [ ] setup simple skybox and ground

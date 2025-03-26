@@ -10,6 +10,7 @@ import UIManager from './UIManager.js';
 import EffectsManager from './EffectsManager.js';
 import CameraController from './CameraController.js';
 import StadiumWalls from './StadiumWalls.js';
+import Scoreboard from './Scoreboard.js';
 
 /**
  * Main game class that coordinates all game systems
@@ -91,6 +92,15 @@ export default class Game {
         
         // Create stadium walls
         this.stadiumWalls = new StadiumWalls(this.scene, this.field.getProperties());
+        
+        // Create scoreboard
+        this.scoreboard = new Scoreboard(this.scene);
+        this.scoreboard.create(
+            this.field.getProperties().position,
+            this.field.getProperties().width,
+            this.field.getProperties().length,
+            2 // buffer
+        );
         
         // Create obstacles
         this.obstacleSystem = new ObstacleSystem(this.scene);
@@ -273,7 +283,7 @@ export default class Game {
         this.collisionSystem.checkObstacleCollisions(
             this.football.getMesh(),
             this.ballPhysics,
-            [...this.gameState.obstacles, ...this.stadiumWalls.getWalls()],
+            [...this.gameState.obstacles, ...this.stadiumWalls.getWalls(), ...this.scoreboard.getObjects()],
             this.gameProperties
         );
         
