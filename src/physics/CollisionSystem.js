@@ -12,6 +12,16 @@ export default class CollisionSystem {
             duration: 0,
             startTime: 0
         };
+        
+        // Collision sound callback
+        this.collisionCallback = null;
+    }
+    
+    /**
+     * Set callback function for collision sounds
+     */
+    setCollisionCallback(callback) {
+        this.collisionCallback = callback;
     }
 
     /**
@@ -76,7 +86,7 @@ export default class CollisionSystem {
             const energyConservation = 0.9; // High conservation to prevent slowing down too much
             ballPhysics.velocity.multiplyScalar(energyConservation);
             
-            // Add upward component to prevent floor sticking (reduced from 1.0 to 0.4)
+            // Add upward component to prevent floor sticking
             ballPhysics.velocity.y = Math.max(ballPhysics.velocity.y, 0.4);
             
             // Add random slight variance to make bounces feel natural
@@ -91,6 +101,14 @@ export default class CollisionSystem {
             // Add screen shake for dramatic effect on hard impacts
             if (impactSpeed > 5) { // Reduced threshold for more frequent shake
                 this.shakeCamera(impactSpeed / 5);
+            }
+            
+            // Trigger sound callback if available
+            if (this.collisionCallback) {
+                // Check if the obstacle is a stadium wall or a regular obstacle
+                const isWall = obstacle.userData && obstacle.userData.isWall;
+                const collisionType = isWall ? 'wall' : 'obstacle';
+                this.collisionCallback(collisionType, ball.position, impactSpeed);
             }
         }
     }
@@ -375,6 +393,11 @@ export default class CollisionSystem {
             // Add screen shake for hard impacts
             if (impactSpeed > 5) {
                 this.shakeCamera(impactSpeed / 10);
+            }
+            
+            // Trigger sound callback if available
+            if (this.collisionCallback && impactSpeed > 2) {
+                this.collisionCallback('goal_frame', ball.position, impactSpeed);
             }
         }
     }

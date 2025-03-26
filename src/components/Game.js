@@ -11,6 +11,8 @@ import EffectsManager from './EffectsManager.js';
 import CameraController from './CameraController.js';
 import StadiumWalls from './StadiumWalls.js';
 import Scoreboard from './Scoreboard.js';
+import SoundManager from './SoundManager.js';
+import TouchControls from './TouchControls.js';
 
 /**
  * Main game class that coordinates all game systems
@@ -52,13 +54,20 @@ export default class Game {
             forwardAcceleration: 40.0,   // Acceleration for forward movement
             backwardAcceleration: 20.0,  // Acceleration for backward movement
             lateralAcceleration: 35.0,   // Acceleration for side-to-side movement
-            obstacleRepulsionForce: 20.0, // Force for obstacle collisions (reduced from 30.0)
-            jumpForce: 7.4,             // Force applied when jumping (reduced by factor of 5, from 12.0)
+            obstacleRepulsionForce: 20.0, // Force for obstacle collisions
+            jumpForce: 7.4,             // Force applied when jumping
             jumpCooldown: 0.3           // Time in seconds before player can jump again
         };
         
         // Jump cooldown timer
         this.jumpCooldownTimer = 0;
+        
+        // Sound cooldown for frequent sounds
+        this.soundCooldowns = {
+            bounce: 0,
+            collision: 0,
+            roll: 0
+        };
         
         // Initialize physics and components
         this.initializeComponents();
@@ -122,6 +131,102 @@ export default class Game {
         // Create camera controller
         this.cameraController = new CameraController(this.camera);
         this.cameraController.setTarget(this.football.getMesh());
+        
+        // Create sound manager
+        this.soundManager = new SoundManager(this.camera);
+        
+        // Create touch controls for mobile devices
+        this.touchControls = new TouchControls(this.handleTouchJump.bind(this), this.camera);
+        
+        // Simulate touch inputs by updating keyboard inputs
+        if (this.touchControls && this.touchControls.isActive()) {
+            this.setupTouchKeyboardEmulation();
+        }
+        
+        // Set collision callback for sounds
+        this.collisionSystem.setCollisionCallback(this.handleCollisionSound.bind(this));
+        
+        // Set ball physics collision callback
+        this.ballPhysics.setCollisionCallback(this.handleCollisionSound.bind(this));
+    }
+    
+    /**
+     * Handle collision sound effects
+     */
+    handleCollisionSound(collisionType, position, velocity) {
+        const currentTime = Date.now();
+        
+        switch(collisionType) {
+            case 'obstacle':
+                // Play collision sound with at least 100ms between sounds
+                if (currentTime - this.soundCooldowns.collision > 100) {
+                    this.soundManager.playAt('collision', position, 0.8);
+                    this.soundCooldowns.collision = currentTime;
+                }
+                break;
+                
+            case 'ground':
+                // Play bounce sound based on velocity
+                if (velocity > 3 && currentTime - this.soundCooldowns.bounce > 200) {
+                    const volume = Math.min(Math.abs(velocity) / 10, 1);
+                    this.soundManager.playAt('bounce', position, volume * 0.6);
+                    this.soundCooldowns.bounce = currentTime;
+                }
+                break;
+                
+            case 'wall':
+                // Play bounce sound with different pitch for walls
+                if (velocity > 2 && currentTime - this.soundCooldowns.bounce > 150) {
+                    const volume = Math.min(Math.abs(velocity) / 8, 1);
+                    this.soundManager.playAt('bounce', position, volume * 0.5);
+                    this.soundCooldowns.bounce = currentTime;
+                }
+                break;
+                
+            case 'goal_frame':
+                // Play special goal post sound
+                this.soundManager.playAt('kick', position, 0.4);
+                break;
+        }
+    }
+
+    /**
+     * Setup touch input to emulate keyboard inputs
+     */
+    setupTouchKeyboardEmulation() {
+        // Update our keys object based on touch controls 60 times per second
+        this.touchInputInterval = setInterval(() => {
+            if (!this.touchControls || !this.gameState.isPlaying) return;
+            
+            const touchDirection = this.touchControls.getMovementDirection();
+            
+            // Reset movement keys
+            this.keys.ArrowUp = false;
+            this.keys.ArrowDown = false;
+            this.keys.ArrowLeft = false;
+            this.keys.ArrowRight = false;
+            this.keys.KeyW = false;
+            this.keys.KeyS = false;
+            this.keys.KeyA = false;
+            this.keys.KeyD = false;
+            
+            // Set keys based on touch direction
+            if (touchDirection.z < -0.2) {
+                this.keys.ArrowUp = true;
+                this.keys.KeyW = true;
+            } else if (touchDirection.z > 0.2) {
+                this.keys.ArrowDown = true;
+                this.keys.KeyS = true;
+            }
+            
+            if (touchDirection.x < -0.2) {
+                this.keys.ArrowLeft = true;
+                this.keys.KeyA = true;
+            } else if (touchDirection.x > 0.2) {
+                this.keys.ArrowRight = true;
+                this.keys.KeyD = true;
+            }
+        }, 16); // ~60fps
     }
 
     /**
@@ -161,7 +266,27 @@ export default class Game {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            // Update touch controls if active
+            if (this.touchControls) {
+                this.touchControls.resize();
+            }
         });
+    }
+
+    /**
+     * Handle jumping input from touch controls
+     */
+    handleTouchJump() {
+        if (this.gameState.isPlaying && this.ballPhysics.onGround && this.jumpCooldownTimer <= 0) {
+            // Simulate pressing space key
+            this.keys.Space = true;
+            
+            // Reset after a short delay to simulate a key press
+            setTimeout(() => {
+                this.keys.Space = false;
+            }, 100);
+        }
     }
 
     /**
@@ -178,6 +303,12 @@ export default class Game {
             const jumped = this.ballPhysics.jump(this.gameProperties.jumpForce);
             if (jumped) {
                 this.jumpCooldownTimer = this.gameProperties.jumpCooldown;
+                
+                // Play jump sound
+                this.soundManager.play('jump', 0.6);
+                
+                // Start roll sound cooldown so it doesn't immediately play when landing
+                this.soundCooldowns.roll = Date.now() + 300;
             }
         }
     }
@@ -194,9 +325,18 @@ export default class Game {
         );
         
         if (isInGoal) {
+            // Update game state
             this.gameState.gameWon();
+            
+            // Show goal celebration effects
             this.effectsManager.celebrateGoal(this.goal.getProperties().position);
             this.uiManager.showWinScreen();
+            
+            // Play goal sound only if it hasn't been played yet this round
+            if (!this.gameState.goalSoundPlayed) {
+                this.soundManager.play('goal', 1.0);
+                this.gameState.goalSoundPlayed = true;
+            }
         }
     }
 
@@ -217,6 +357,9 @@ export default class Game {
             // Store the camera position to keep it fixed when game is lost
             this.gameState.lastCameraPosition = this.camera.position.clone();
             this.gameState.lastCameraLookAt = this.football.getMesh().position.clone();
+            
+            // Play whistle sound when out of bounds
+            this.soundManager.play('whistle', 0.8);
         }
     }
 
@@ -240,8 +383,55 @@ export default class Game {
         // Reset jump cooldown
         this.jumpCooldownTimer = 0;
         
+        // Reset sound cooldowns
+        this.soundCooldowns = {
+            bounce: 0,
+            collision: 0,
+            roll: 0
+        };
+        
+        // Stop all currently playing sounds (including goal sound)
+        this.soundManager.stopAllSounds();
+        
+        // Play UI sound
+        this.soundManager.play('button', 0.6);
+        
         // Reset camera position using the camera controller
         this.cameraController.reset();
+    }
+
+    /**
+     * Update rolling sound based on ball velocity
+     */
+    updateRollSound(deltaTime) {
+        const currentTime = Date.now();
+        
+        // Only play rolling sound when on ground and moving
+        if (this.ballPhysics.onGround) {
+            const horizontalSpeed = Math.sqrt(
+                this.ballPhysics.velocity.x * this.ballPhysics.velocity.x + 
+                this.ballPhysics.velocity.z * this.ballPhysics.velocity.z
+            );
+            
+            // Play rolling sound if moving and cooldown elapsed
+            if (horizontalSpeed > 3 && currentTime - this.soundCooldowns.roll > 300) {
+                const volume = Math.min(horizontalSpeed / 15, 1) * 0.3; // Max 30% volume for roll
+                
+                // Start or update rolling sound
+                const rollSound = this.soundManager.sounds['roll'];
+                if (rollSound && !rollSound.isPlaying) {
+                    this.soundManager.play('roll', volume);
+                } else if (rollSound) {
+                    rollSound.setVolume(volume * this.soundManager.masterVolume);
+                }
+            } else if (horizontalSpeed < 2) {
+                // Stop rolling sound when almost stopped
+                this.soundManager.stop('roll');
+            }
+        } else {
+            // Stop rolling sound when in air
+            this.soundManager.stop('roll');
+        }
     }
 
     /**
@@ -276,6 +466,9 @@ export default class Game {
             this.field.getFloor()
         );
         
+        // Update rolling sound based on ball movement
+        this.updateRollSound(deltaTime);
+        
         // Debug positions
         this.debugPositions();
         
@@ -306,6 +499,11 @@ export default class Game {
         
         // Update UI
         this.uiManager.update();
+        
+        // Update touch controls if active
+        if (this.touchControls && this.touchControls.isActive()) {
+            this.touchControls.update();
+        }
         
         // Update special effects
         this.effectsManager.updateParticles(deltaTime);
