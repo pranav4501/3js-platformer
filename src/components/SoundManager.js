@@ -53,7 +53,7 @@ export default class SoundManager {
         this.loadSound('jump', 'jump.mp3');
         
         // Background music (loaded separately to control independently)
-        this.loadBackgroundMusic('background', 'game_music.mp3');
+        this.loadBackgroundMusic('background', 'game_music1.mp3');
         
         // Display help message if needed
         setTimeout(() => this.checkSoundsLoaded(), 3000);

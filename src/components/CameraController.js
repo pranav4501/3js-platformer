@@ -100,6 +100,8 @@ export default class CameraController {
      * Handle camera during falling state
      */
     handleFallingCamera() {
+        if (!this.target) return;
+        
         // Get horizontal position from the ball, but keep fixed height
         const cameraPosition = new THREE.Vector3();
         cameraPosition.x = this.target.position.x;
@@ -109,8 +111,8 @@ export default class CameraController {
         const distanceBehind = 8;
         cameraPosition.z = this.target.position.z + distanceBehind;
         
-        // Apply camera position immediately, without smoothing
-        this.camera.position.copy(cameraPosition);
+        // Apply camera position with some smoothing during falling
+        this.camera.position.lerp(cameraPosition, 0.05);
         this.camera.lookAt(this.target.position);
     }
     

@@ -335,8 +335,8 @@ export default class Game {
             if (!this.gameState.hasWon) {
                 this.gameState.gameWon();
                 
-                // Show goal effects
-                this.effectsManager.showGoalEffect(this.football.getMesh().position);
+                // Particles temporarily disabled
+                // this.effectsManager.showGoalEffect(this.football.getMesh().position);
                 
                 // Play goal sound
                 if (!this.gameState.goalSoundPlayed) {
@@ -349,6 +349,9 @@ export default class Game {
                     this.football.getMesh().position,
                     this.goal.getGroup().position
                 );
+                
+                // Stop ball physics after goal
+                this.ballPhysics.velocity.set(0, 0, 0);
             }
         }
     }
@@ -367,12 +370,23 @@ export default class Game {
         if (isOutOfBounds) {
             this.gameState.startFalling();
             
+            // Mark the ball as falling to prevent ground collisions
+            this.football.getMesh().userData.isFalling = true;
+            
             // Store the camera position to keep it fixed when game is lost
             this.gameState.lastCameraPosition = this.camera.position.clone();
             this.gameState.lastCameraLookAt = this.football.getMesh().position.clone();
             
             // Play whistle sound when out of bounds
             this.soundManager.play('whistle', 0.8);
+            
+            // Show out of bounds message immediately
+            // Short timeout to ensure whistle sound plays first
+            setTimeout(() => {
+                if (this.gameState.isFalling) {
+                    this.gameState.gameLost();
+                }
+            }, 500);
         }
     }
 
@@ -390,6 +404,14 @@ export default class Game {
     nextLevel() {
         // Check if there are more levels
         if (this.levelSystem.nextLevel()) {
+            // Stop all sounds, especially the goal sound
+            if (this.soundManager) {
+                this.soundManager.stopAllSounds();
+            }
+            
+            // Hide any particles
+            this.effectsManager.hideParticles();
+            
             // Load the next level
             const obstacles = this.levelSystem.loadCurrentLevel();
             this.gameState.setObstacles(obstacles);
@@ -402,6 +424,11 @@ export default class Game {
             
             // Reset ball physics
             this.ballPhysics.reset();
+            
+            // Reset the ball's falling flag
+            if (this.football && this.football.getMesh()) {
+                this.football.getMesh().userData.isFalling = false;
+            }
         } else {
             // No more levels, game completed
             this.gameState.completeGame();
@@ -412,14 +439,27 @@ export default class Game {
      * Reset the game state (restart level)
      */
     reset() {
+        // Stop all sounds, especially the goal sound
+        if (this.soundManager) {
+            this.soundManager.stopAllSounds();
+        }
+        
         // Reset game state
         this.gameState.reset();
+        
+        // Hide any particles
+        this.effectsManager.hideParticles();
         
         // Reset ball position based on current level
         this.resetBallPosition();
         
         // Reset physics
         this.ballPhysics.reset();
+        
+        // Reset the ball's falling flag
+        if (this.football && this.football.getMesh()) {
+            this.football.getMesh().userData.isFalling = false;
+        }
         
         // Reset camera
         this.cameraController.reset();
@@ -470,11 +510,11 @@ export default class Game {
         // Limit delta time to avoid large jumps during pauses or slow frames
         const clampedDeltaTime = Math.min(deltaTime, 0.1);
         
+        // Update ball position based on physics - always update to handle falling state
+        this.ballPhysics.update(this.football.getMesh(), clampedDeltaTime, this.gameState);
+        
         // Update game logic if the game is active
         if (this.gameState.isPlaying) {
-            // Update ball position based on physics
-            this.ballPhysics.update(this.football.getMesh(), clampedDeltaTime);
-            
             // Check keyboard input
             if (this.keys.ArrowUp || this.keys.KeyW) {
                 this.ballPhysics.applyForce(new THREE.Vector3(0, 0, -this.gameProperties.forwardAcceleration), clampedDeltaTime);
@@ -529,8 +569,10 @@ export default class Game {
             this.updateRollSound(clampedDeltaTime);
         }
         
-        // Update ball rotation based on movement
-        this.football.updateRotation(this.ballPhysics.velocity, clampedDeltaTime);
+        // Update ball rotation based on movement (skip when falling as rotation is handled there)
+        if (!this.gameState.isFalling) {
+            this.football.updateRotation(this.ballPhysics.velocity, clampedDeltaTime);
+        }
         
         // Update camera position
         this.cameraController.update(clampedDeltaTime, this.gameState);
@@ -541,7 +583,8 @@ export default class Game {
         // Update UI
         this.uiManager.update(this.levelSystem);
         
-        // Update collision effects
+        // Update collision effects - particles temporarily disabled
+        // this.effectsManager.updateParticles(clampedDeltaTime);
         this.collisionSystem.updateCollisionEffects(clampedDeltaTime);
         
         // Update camera shake if active
