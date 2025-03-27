@@ -15,3 +15,6 @@
 ## Mobile
 - [ ] basic controls
  
+## Level
+- [ ] Add stars to the levels
+- [ ] Add a level map

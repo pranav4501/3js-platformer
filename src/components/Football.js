@@ -139,6 +139,23 @@ export default class Football {
     }
 
     /**
+     * Update ball rotation based on velocity
+     */
+    updateRotation(velocity, deltaTime) {
+        const horizontalSpeed = Math.sqrt(
+            velocity.x * velocity.x + 
+            velocity.z * velocity.z
+        );
+        
+        if (horizontalSpeed > 0.1) {
+            // Calculate rotation axis (perpendicular to movement direction)
+            const rotationAxis = new THREE.Vector3(-velocity.z, 0, velocity.x).normalize();
+            const rotationAmount = horizontalSpeed * deltaTime / this.radius;
+            this.mesh.rotateOnWorldAxis(rotationAxis, rotationAmount);
+        }
+    }
+
+    /**
      * Get the football mesh
      */
     getMesh() {
