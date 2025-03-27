@@ -179,27 +179,25 @@ export default class Game {
                 break;
                 
             case 'ground':
-                // Play bounce sound based on velocity - lowered threshold from 3 to 1.5
+                // Play bounce sound based on velocity - consistent volume
                 if (velocity > 1.5 && currentTime - this.soundCooldowns.bounce > 200) {
-                    // Adjusted scale for lower velocities to still have good volume
-                    const volume = Math.min(Math.abs(velocity) / 8, 1);
-                    this.soundManager.playAt('bounce', position, volume * 1.0); 
+                    // Use a fixed volume for consistent bounce sounds
+                    this.soundManager.play('bounce', 0.8); 
                     this.soundCooldowns.bounce = currentTime;
                 }
                 break;
                 
             case 'wall':
-                // Play bounce sound with different pitch for walls - lowered threshold from 2 to 1
+                // Play bounce sound with consistent volume for walls
                 if (velocity > 1 && currentTime - this.soundCooldowns.bounce > 150) {
-                    const volume = Math.min(Math.abs(velocity) / 6, 1);
-                    this.soundManager.playAt('bounce', position, volume * 0.85);
+                    this.soundManager.play('bounce', 0.7);
                     this.soundCooldowns.bounce = currentTime;
                 }
                 break;
                 
             case 'goal_frame':
-                // Play special goal post sound - increased volume from 0.4 to 0.6
-                this.soundManager.playAt('kick', position, 0.6);
+                // Play special goal post sound - fixed volume
+                this.soundManager.play('kick', 0.6);
                 break;
         }
     }
@@ -343,8 +341,8 @@ export default class Game {
             if (!this.gameState.hasWon) {
                 this.gameState.gameWon();
                 
-                // Particles temporarily disabled
-                // this.effectsManager.showGoalEffect(this.football.getMesh().position);
+                // Trigger confetti behind the goal
+                this.effectsManager.showConfetti();
                 
                 // Play goal sound
                 if (!this.gameState.goalSoundPlayed) {
@@ -598,8 +596,8 @@ export default class Game {
         // Update UI
         this.uiManager.update(this.levelSystem);
         
-        // Update collision effects - particles temporarily disabled
-        // this.effectsManager.updateParticles(clampedDeltaTime);
+        // Update confetti and other effects
+        this.effectsManager.updateParticles(clampedDeltaTime);
         this.collisionSystem.updateCollisionEffects(clampedDeltaTime);
         
         // Update camera shake if active

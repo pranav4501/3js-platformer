@@ -8,10 +8,10 @@ export default class EffectsManager {
         this.scene = scene;
         this.particles = null;
         this.goalParticles = null;
+        this.confetti = null;
         
-        // Comment out particle system creation for now
-        // this.createParticleSystem();
-        // this.createGoalParticleSystem();
+        // Create confetti system
+        this.createConfettiSystem();
     }
 
     /**
@@ -54,6 +54,87 @@ export default class EffectsManager {
         this.particles.visible = false; // Hide initially
         this.scene.add(this.particles);
         */
+    }
+    
+    /**
+     * Create goal-specific confetti system
+     */
+    createConfettiSystem() {
+        const particleCount = 300;
+        const particleGeometry = new THREE.BufferGeometry();
+        const particlePositions = new Float32Array(particleCount * 3);
+        const particleColors = new Float32Array(particleCount * 3);
+        const particleSizes = new Float32Array(particleCount);
+        
+        // Create confetti with random positions behind the goal
+        for (let i = 0; i < particleCount; i++) {
+            // Random positions in a rectangular area behind the goal
+            const x = (Math.random() - 0.5) * 8;     // -4 to 4 (width of goal area)
+            const y = Math.random() * 8 + 3;         // 3 to 11 (above the ground)
+            const z = -45 + (Math.random() - 0.5);   // Just behind the goal at -45
+            
+            particlePositions[i * 3] = x;
+            particlePositions[i * 3 + 1] = y;
+            particlePositions[i * 3 + 2] = z;
+            
+            // Vibrant random colors for confetti
+            particleColors[i * 3] = Math.random();     // R
+            particleColors[i * 3 + 1] = Math.random(); // G
+            particleColors[i * 3 + 2] = Math.random(); // B
+            
+            // Random sizes for confetti pieces
+            particleSizes[i] = Math.random() * 0.3 + 0.2;
+        }
+        
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+        particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+        particleGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+        
+        // Create texture for confetti particles
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const context = canvas.getContext('2d');
+        
+        // Draw a small rectangle to represent confetti
+        context.fillStyle = 'white';
+        context.fillRect(16, 16, 32, 32);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        
+        // Create material with the texture
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 0.5,
+            map: texture,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.9,
+            alphaTest: 0.1
+        });
+        
+        this.confetti = new THREE.Points(particleGeometry, particleMaterial);
+        this.confetti.visible = false;
+        
+        // Store velocity and rotation data for each particle
+        this.confetti.userData = {
+            velocities: new Array(particleCount).fill().map(() => 
+                new THREE.Vector3(
+                    (Math.random() - 0.5) * 2,     // Random X velocity
+                    -1 - Math.random() * 2,         // Falling (negative Y velocity)
+                    (Math.random() - 0.5) * 0.5     // Slight Z movement
+                )
+            ),
+            rotations: new Array(particleCount).fill().map(() => 
+                new THREE.Vector3(
+                    Math.random() * 2 - 1,
+                    Math.random() * 2 - 1,
+                    Math.random() * 2 - 1
+                )
+            ),
+            startTime: 0
+        };
+        
+        this.scene.add(this.confetti);
     }
     
     /**
@@ -169,6 +250,38 @@ export default class EffectsManager {
         }, this.goalParticles.userData.duration);
         */
     }
+    
+    /**
+     * Show confetti effect behind the goal
+     */
+    showConfetti() {
+        if (this.confetti) {
+            // Reset confetti positions
+            const positions = this.confetti.geometry.attributes.position.array;
+            for (let i = 0; i < positions.length / 3; i++) {
+                // Random positions in a rectangular area behind the goal
+                positions[i * 3] = (Math.random() - 0.5) * 8;     // -4 to 4 (width of goal area)
+                positions[i * 3 + 1] = Math.random() * 8 + 5;     // 5 to 13 (above the ground)
+                positions[i * 3 + 2] = -45 + (Math.random() - 0.5); // Just behind the goal
+            }
+            this.confetti.geometry.attributes.position.needsUpdate = true;
+            
+            // Reset velocities
+            this.confetti.userData.velocities = new Array(positions.length / 3).fill().map(() => 
+                new THREE.Vector3(
+                    (Math.random() - 0.5) * 2,     // Random X velocity
+                    -1 - Math.random() * 2,         // Falling (negative Y velocity)
+                    (Math.random() - 0.5) * 0.5     // Slight Z movement
+                )
+            );
+            
+            // Make confetti visible
+            this.confetti.visible = true;
+            
+            // Record start time
+            this.confetti.userData.startTime = Date.now();
+        }
+    }
 
     /**
      * Hide celebration particles
@@ -179,6 +292,9 @@ export default class EffectsManager {
         }
         if (this.goalParticles) {
             this.goalParticles.visible = false;
+        }
+        if (this.confetti) {
+            this.confetti.visible = false;
         }
     }
 
@@ -226,5 +342,37 @@ export default class EffectsManager {
             this.goalParticles.rotation.y += deltaTime * 0.2;
         }
         */
+        
+        // Update confetti particles
+        if (this.confetti && this.confetti.visible) {
+            const positions = this.confetti.geometry.attributes.position.array;
+            const velocities = this.confetti.userData.velocities;
+            
+            // Update each confetti particle
+            for (let i = 0; i < velocities.length; i++) {
+                // Update position based on velocity
+                positions[i * 3] += velocities[i].x * deltaTime;
+                positions[i * 3 + 1] += velocities[i].y * deltaTime;
+                positions[i * 3 + 2] += velocities[i].z * deltaTime;
+                
+                // Apply slight gravity effect
+                velocities[i].y -= 0.5 * deltaTime;
+                
+                // Add slight wind effect
+                velocities[i].x += (Math.random() - 0.5) * 0.3 * deltaTime;
+                
+                // If confetti falls below ground, reset it at the top
+                if (positions[i * 3 + 1] < 0) {
+                    positions[i * 3 + 1] = Math.random() * 10 + 5;
+                    positions[i * 3] = (Math.random() - 0.5) * 10;
+                    velocities[i].y = -1 - Math.random() * 2;
+                }
+            }
+            
+            this.confetti.geometry.attributes.position.needsUpdate = true;
+            
+            // Add slight rotation for visual appeal
+            this.confetti.rotation.y += deltaTime * 0.1;
+        }
     }
 } 

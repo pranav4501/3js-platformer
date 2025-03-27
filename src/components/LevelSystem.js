@@ -15,7 +15,7 @@ export default class LevelSystem {
         
         // Define level configurations
         this.levels = [
-            // Level 1: Tutorial - Just ball and goal
+            // Level 1: Basic controls - Just ball and goal
             {
                 name: "Level 1: Getting Started",
                 description: "Move the ball to the goal. Don't fall off the field!",
@@ -24,10 +24,10 @@ export default class LevelSystem {
                 ballStartPosition: new THREE.Vector3(0, 0.5, 0)
             },
             
-            // Level 2: Single obstacle
+            // Level 2: Single static player
             {
-                name: "Level 2: Obstacle Introduction",
-                description: "Watch out for the player! The ball will bounce off if you collide.",
+                name: "Level 2: First Obstacle",
+                description: "Avoid the player! The ball will bounce off if you collide.",
                 obstacles: [
                     {
                         type: 'player',
@@ -39,8 +39,71 @@ export default class LevelSystem {
                 ],
                 windBlowers: [],
                 ballStartPosition: new THREE.Vector3(0, 0.5, 0)
+            },
+            
+            // Level 3: Two static players
+            {
+                name: "Level 3: Double Trouble",
+                description: "Navigate between two players to reach the goal.",
+                obstacles: [
+                    {
+                        type: 'player',
+                        position: new THREE.Vector3(-2, 0, -15),
+                        rotation: 0,
+                        scale: 1,
+                        movement: null
+                    },
+                    {
+                        type: 'player',
+                        position: new THREE.Vector3(2, 0, -25),
+                        rotation: Math.PI,
+                        scale: 1,
+                        movement: null
+                    }
+                ],
+                windBlowers: [],
+                ballStartPosition: new THREE.Vector3(0, 0.5, 0)
+            },
+            
+            // Level 4: Single Moving player
+            {
+                name: "Level 4: Moving Target",
+                description: "Time your movement to avoid the patrolling player.",
+                obstacles: [
+                    {
+                        type: 'player',
+                        position: new THREE.Vector3(-3, 0, -20),
+                        rotation: Math.PI / 2, // Face right
+                        scale: 1,
+                        movement: {
+                            type: 'horizontal',
+                            speed: 3.5,
+                            startX: -3,
+                            endX: 3,
+                            direction: 1 // moving right initially
+                        }
+                    }
+                ],
+                windBlowers: [],
+                ballStartPosition: new THREE.Vector3(0, 0.5, 0)
+            },
+            
+            // Level 5: Wind Blower
+            {
+                name: "Level 5: Against the Wind",
+                description: "Watch out for the wind blower - it will push your ball!",
+                obstacles: [],
+                windBlowers: [
+                    {
+                        position: new THREE.Vector3(-4, 0.5, -15),
+                        direction: new THREE.Vector3(1, 0, 0), // Blowing right
+                        force: 15,
+                        width: 2,
+                        height: 1.5
+                    }
+                ],
+                ballStartPosition: new THREE.Vector3(0, 0.5, 0)
             }
-            // More levels can be added here
         ];
     }
     
@@ -204,7 +267,7 @@ export default class LevelSystem {
      */
     applyWindForces(ball, ballPhysics) {
         this.windBlowers.forEach(blower => {
-            blower.applyForce(ball, ballPhysics);
+            blower.applyWindForce(ball, ballPhysics);
         });
     }
     
