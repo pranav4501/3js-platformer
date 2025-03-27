@@ -9,6 +9,7 @@ export default class EffectsManager {
         this.particles = null;
         this.goalParticles = null;
         this.confetti = null;
+        this.goalPosition = new THREE.Vector3(0, 0, -45); // Store goal position for confetti reset
         
         // Create confetti system
         this.createConfettiSystem();
@@ -60,7 +61,7 @@ export default class EffectsManager {
      * Create goal-specific confetti system
      */
     createConfettiSystem() {
-        const particleCount = 300;
+        const particleCount = 90;
         const particleGeometry = new THREE.BufferGeometry();
         const particlePositions = new Float32Array(particleCount * 3);
         const particleColors = new Float32Array(particleCount * 3);
@@ -252,28 +253,18 @@ export default class EffectsManager {
     }
     
     /**
-     * Show confetti effect behind the goal
+     * Show confetti celebration at the goal
+     * @param {THREE.Vector3} goalPosition - Position of the goal
      */
-    showConfetti() {
+    showConfetti(goalPosition) {
         if (this.confetti) {
-            // Reset confetti positions
-            const positions = this.confetti.geometry.attributes.position.array;
-            for (let i = 0; i < positions.length / 3; i++) {
-                // Random positions in a rectangular area behind the goal
-                positions[i * 3] = (Math.random() - 0.5) * 8;     // -4 to 4 (width of goal area)
-                positions[i * 3 + 1] = Math.random() * 8 + 5;     // 5 to 13 (above the ground)
-                positions[i * 3 + 2] = -45 + (Math.random() - 0.5); // Just behind the goal
+            // Store goal position for resetting particles
+            if (goalPosition) {
+                this.goalPosition.copy(goalPosition);
             }
-            this.confetti.geometry.attributes.position.needsUpdate = true;
             
-            // Reset velocities
-            this.confetti.userData.velocities = new Array(positions.length / 3).fill().map(() => 
-                new THREE.Vector3(
-                    (Math.random() - 0.5) * 2,     // Random X velocity
-                    -1 - Math.random() * 2,         // Falling (negative Y velocity)
-                    (Math.random() - 0.5) * 0.5     // Slight Z movement
-                )
-            );
+            // Reset all confetti positions to start from the goal
+            this.resetConfettiToGoal();
             
             // Make confetti visible
             this.confetti.visible = true;
@@ -281,6 +272,43 @@ export default class EffectsManager {
             // Record start time
             this.confetti.userData.startTime = Date.now();
         }
+    }
+    
+    /**
+     * Reset all confetti particles to the goal position
+     */
+    resetConfettiToGoal() {
+        if (!this.confetti) return;
+        
+        // Reset confetti positions
+        const positions = this.confetti.geometry.attributes.position.array;
+        const particleCount = positions.length / 3;
+        
+        // Use the stored goal position
+        const goalX = this.goalPosition.x;
+        const goalY = this.goalPosition.y;
+        const goalZ = this.goalPosition.z;
+        
+        for (let i = 0; i < particleCount; i++) {
+            // Random positions in a rectangular area inside the goal
+            positions[i * 3] = goalX + (Math.random() - 0.5) * 8;     // -4 to 4 (width of goal area)
+            positions[i * 3 + 1] = goalY + Math.random() * 5 + 1;     // 1 to 6 (above the ground inside goal)
+            positions[i * 3 + 2] = goalZ + (Math.random() - 0.5) * 2; // Inside the goal depth
+        }
+        this.confetti.geometry.attributes.position.needsUpdate = true;
+        
+        // Reset velocities
+        this.confetti.userData.velocities = new Array(particleCount).fill().map(() => 
+            new THREE.Vector3(
+                (Math.random() - 0.5) * 2,     // Random X velocity
+                -1 - Math.random() * 2,         // Falling (negative Y velocity)
+                (Math.random() - 0.5) * 0.5     // Slight Z movement
+            )
+        );
+        
+        // Reset the confetti mesh position and rotation
+        this.confetti.position.set(0, 0, 0);
+        this.confetti.rotation.set(0, 0, 0);
     }
 
     /**
@@ -302,46 +330,7 @@ export default class EffectsManager {
      * Update particle animations
      */
     updateParticles(deltaTime) {
-        /* Commented out as requested
-        if (this.particles && this.particles.visible) {
-            this.particles.rotation.y += deltaTime * 0.5;
-            
-            // Make particles move upward
-            const positions = this.particles.geometry.attributes.position.array;
-            for (let i = 0; i < positions.length; i += 3) {
-                positions[i + 1] += deltaTime * 1.0; // Move up
-                
-                // Reset particles that go too high
-                if (positions[i + 1] > 10) {
-                    positions[i + 1] = 0;
-                }
-            }
-            
-            this.particles.geometry.attributes.position.needsUpdate = true;
-        }
-        
-        // Update goal particles
-        if (this.goalParticles && this.goalParticles.visible) {
-            const positions = this.goalParticles.geometry.attributes.position.array;
-            const velocities = this.goalParticles.userData.velocities;
-            
-            // Apply gravity and move particles
-            for (let i = 0; i < velocities.length; i++) {
-                // Update position based on velocity
-                positions[i * 3] += velocities[i].x * deltaTime;
-                positions[i * 3 + 1] += velocities[i].y * deltaTime;
-                positions[i * 3 + 2] += velocities[i].z * deltaTime;
-                
-                // Apply gravity to y velocity
-                velocities[i].y -= 3 * deltaTime;
-            }
-            
-            this.goalParticles.geometry.attributes.position.needsUpdate = true;
-            
-            // Add rotation for visual appeal
-            this.goalParticles.rotation.y += deltaTime * 0.2;
-        }
-        */
+        /* Commented out as requested */
         
         // Update confetti particles
         if (this.confetti && this.confetti.visible) {
@@ -358,21 +347,26 @@ export default class EffectsManager {
                 // Apply slight gravity effect
                 velocities[i].y -= 0.5 * deltaTime;
                 
-                // Add slight wind effect
-                velocities[i].x += (Math.random() - 0.5) * 0.3 * deltaTime;
+                // Add slight wind effect - reduced to minimize drift
+                velocities[i].x += (Math.random() - 0.5) * 0.1 * deltaTime;
                 
-                // If confetti falls below ground, reset it at the top
-                if (positions[i * 3 + 1] < 0) {
-                    positions[i * 3 + 1] = Math.random() * 10 + 5;
-                    positions[i * 3] = (Math.random() - 0.5) * 10;
+                // If confetti falls below ground or drifts too far, reset it to the goal position
+                if (positions[i * 3 + 1] < 0 || 
+                    Math.abs(positions[i * 3] - this.goalPosition.x) > 15 ||
+                    Math.abs(positions[i * 3 + 2] - this.goalPosition.z) > 15) {
+                    positions[i * 3 + 1] = this.goalPosition.y + Math.random() * 5 + 1;
+                    positions[i * 3] = this.goalPosition.x + (Math.random() - 0.5) * 8;
+                    positions[i * 3 + 2] = this.goalPosition.z + (Math.random() - 0.5) * 2;
                     velocities[i].y = -1 - Math.random() * 2;
+                    velocities[i].x = (Math.random() - 0.5) * 2;
+                    velocities[i].z = (Math.random() - 0.5) * 0.5;
                 }
             }
             
             this.confetti.geometry.attributes.position.needsUpdate = true;
             
-            // Add slight rotation for visual appeal
-            this.confetti.rotation.y += deltaTime * 0.1;
+            // Reduced rotation speed to minimize drift
+            this.confetti.rotation.y += deltaTime * 0.05;
         }
     }
 } 

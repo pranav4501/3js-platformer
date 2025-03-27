@@ -125,15 +125,17 @@ export default class Game {
         // Create collision system
         this.collisionSystem = new CollisionSystem(this.scene);
         
+        // Create effects manager
+        this.effectsManager = new EffectsManager(this.scene);
+        // Set initial goal position for effects
+        this.effectsManager.goalPosition.copy(this.goal.getGroup().position);
+        
         // Create UI manager with callbacks
         this.uiManager = new UIManager(
             this.gameState,
             this.reset.bind(this),
             this.nextLevel.bind(this)
         );
-        
-        // Create effects manager
-        this.effectsManager = new EffectsManager(this.scene);
         
         // Create camera controller
         this.cameraController = new CameraController(this.camera);
@@ -341,8 +343,8 @@ export default class Game {
             if (!this.gameState.hasWon) {
                 this.gameState.gameWon();
                 
-                // Trigger confetti behind the goal
-                this.effectsManager.showConfetti();
+                // Trigger confetti inside the goal
+                this.effectsManager.showConfetti(this.goal.getGroup().position);
                 
                 // Play goal sound
                 if (!this.gameState.goalSoundPlayed) {
@@ -414,16 +416,11 @@ export default class Game {
             this.soundManager.stopCelebrationSounds();
         }
         
+        // Hide any visible particles
+        this.effectsManager.hideParticles();
+        
         // Check if there are more levels
         if (this.levelSystem.nextLevel()) {
-            // Stop all sounds, especially the goal sound
-            if (this.soundManager) {
-                this.soundManager.stopAllSounds();
-            }
-            
-            // Hide any particles
-            this.effectsManager.hideParticles();
-            
             // Load the next level
             const obstacles = this.levelSystem.loadCurrentLevel();
             this.gameState.setObstacles(obstacles);
@@ -437,10 +434,8 @@ export default class Game {
             // Reset ball physics
             this.ballPhysics.reset();
             
-            // Reset the ball's falling flag
-            if (this.football && this.football.getMesh()) {
-                this.football.getMesh().userData.isFalling = false;
-            }
+            // Update goal position for effects manager (for confetti positioning)
+            this.effectsManager.goalPosition.copy(this.goal.getGroup().position);
         } else {
             // No more levels, game completed
             this.gameState.completeGame();
