@@ -289,6 +289,14 @@ export default class SoundManager {
     }
     
     /**
+     * Stop celebration sounds (goal sound, etc.)
+     */
+    stopCelebrationSounds() {
+        // Stop goal sound
+        this.stop('goal');
+    }
+    
+    /**
      * Play background music
      */
     playBackgroundMusic() {

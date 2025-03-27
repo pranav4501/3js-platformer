@@ -11,6 +11,8 @@ export default class UIManager {
         this.levelInfoScreen = null;
         this.levelCompletedScreen = null;
         this.gameCompletedScreen = null;
+        this.startScreen = null; // Added for start screen
+        this.pauseScreen = null; // Added for pause screen
         this.levelInfo = { name: "", description: "" };
         
         this.createUI();
@@ -20,6 +22,136 @@ export default class UIManager {
      * Create UI elements
      */
     createUI() {
+        // Create start screen
+        this.startScreen = document.createElement('div');
+        this.startScreen.id = 'start-screen';
+        this.startScreen.style.position = 'absolute';
+        this.startScreen.style.top = '50%';
+        this.startScreen.style.left = '50%';
+        this.startScreen.style.transform = 'translate(-50%, -50%)';
+        this.startScreen.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        this.startScreen.style.color = 'white';
+        this.startScreen.style.padding = '30px';
+        this.startScreen.style.borderRadius = '10px';
+        this.startScreen.style.textAlign = 'center';
+        this.startScreen.style.display = 'block';
+        this.startScreen.style.zIndex = '1000';
+        this.startScreen.style.width = '300px';
+        
+        // Title
+        const gameTitle = document.createElement('h1');
+        gameTitle.textContent = 'Football Challenge';
+        gameTitle.style.color = '#ffff00';
+        gameTitle.style.marginBottom = '20px';
+        gameTitle.style.fontSize = '28px';
+        
+        // Description
+        const gameDescription = document.createElement('p');
+        gameDescription.textContent = 'Guide the football to the goal, avoiding obstacles along the way.';
+        gameDescription.style.marginBottom = '30px';
+        gameDescription.style.fontSize = '16px';
+        
+        // Controls info
+        const controlsInfo = document.createElement('div');
+        controlsInfo.style.marginBottom = '30px';
+        controlsInfo.style.fontSize = '14px';
+        controlsInfo.style.textAlign = 'left';
+        
+        controlsInfo.innerHTML = `
+            <p><strong>Controls:</strong></p>
+            <p>Arrow Keys / WASD - Move Ball</p>
+            <p>Space - Jump</p>
+            <p>P or ESC - Pause Game</p>
+        `;
+        
+        // Start button
+        const startButton = document.createElement('button');
+        startButton.textContent = 'Start Game';
+        startButton.style.padding = '12px 24px';
+        startButton.style.backgroundColor = '#4CAF50';
+        startButton.style.color = 'white';
+        startButton.style.border = 'none';
+        startButton.style.borderRadius = '5px';
+        startButton.style.cursor = 'pointer';
+        startButton.style.fontSize = '18px';
+        startButton.style.fontWeight = 'bold';
+        
+        startButton.addEventListener('click', () => {
+            this.hideAllScreens();
+            this.gameState.startGame();
+        });
+        
+        this.startScreen.appendChild(gameTitle);
+        this.startScreen.appendChild(gameDescription);
+        this.startScreen.appendChild(controlsInfo);
+        this.startScreen.appendChild(startButton);
+        document.body.appendChild(this.startScreen);
+        
+        // Create pause screen
+        this.pauseScreen = document.createElement('div');
+        this.pauseScreen.id = 'pause-screen';
+        this.pauseScreen.style.position = 'absolute';
+        this.pauseScreen.style.top = '50%';
+        this.pauseScreen.style.left = '50%';
+        this.pauseScreen.style.transform = 'translate(-50%, -50%)';
+        this.pauseScreen.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        this.pauseScreen.style.color = 'white';
+        this.pauseScreen.style.padding = '20px';
+        this.pauseScreen.style.borderRadius = '10px';
+        this.pauseScreen.style.textAlign = 'center';
+        this.pauseScreen.style.display = 'none';
+        this.pauseScreen.style.zIndex = '999';
+        this.pauseScreen.style.width = '250px';
+        
+        // Pause title
+        const pauseTitle = document.createElement('h2');
+        pauseTitle.textContent = 'Game Paused';
+        pauseTitle.style.color = '#4CAF50';
+        pauseTitle.style.marginBottom = '20px';
+        
+        // Resume button
+        const resumeButton = document.createElement('button');
+        resumeButton.textContent = 'Resume Game';
+        resumeButton.style.padding = '10px 20px';
+        resumeButton.style.backgroundColor = '#4CAF50';
+        resumeButton.style.color = 'white';
+        resumeButton.style.border = 'none';
+        resumeButton.style.borderRadius = '5px';
+        resumeButton.style.cursor = 'pointer';
+        resumeButton.style.fontSize = '16px';
+        resumeButton.style.marginBottom = '10px';
+        resumeButton.style.width = '100%';
+        
+        resumeButton.addEventListener('click', () => {
+            this.gameState.resumeGame();
+            this.hidePauseScreen();
+        });
+        
+        // Restart button
+        const pauseRestartButton = document.createElement('button');
+        pauseRestartButton.textContent = 'Restart Level';
+        pauseRestartButton.style.padding = '10px 20px';
+        pauseRestartButton.style.backgroundColor = '#2196F3';
+        pauseRestartButton.style.color = 'white';
+        pauseRestartButton.style.border = 'none';
+        pauseRestartButton.style.borderRadius = '5px';
+        pauseRestartButton.style.cursor = 'pointer';
+        pauseRestartButton.style.fontSize = '16px';
+        pauseRestartButton.style.width = '100%';
+        
+        pauseRestartButton.addEventListener('click', () => {
+            this.hideAllScreens();
+            if (this.resetCallback) {
+                this.resetCallback(true);
+            }
+            this.gameState.resumeGame();
+        });
+        
+        this.pauseScreen.appendChild(pauseTitle);
+        this.pauseScreen.appendChild(resumeButton);
+        this.pauseScreen.appendChild(pauseRestartButton);
+        document.body.appendChild(this.pauseScreen);
+        
         // Create div for win message and restart button
         this.winScreen = document.createElement('div');
         this.winScreen.id = 'win-screen';
@@ -55,7 +187,7 @@ export default class UIManager {
             this.hideAllScreens();
             // Call the reset callback instead of just resetting gameState
             if (this.resetCallback) {
-                this.resetCallback();
+                this.resetCallback(true);
             }
         });
         
@@ -98,7 +230,7 @@ export default class UIManager {
             this.hideAllScreens();
             // Call the reset callback instead of just resetting gameState
             if (this.resetCallback) {
-                this.resetCallback();
+                this.resetCallback(true);
             }
         });
         
@@ -145,6 +277,11 @@ export default class UIManager {
         startLevelButton.addEventListener('click', () => {
             this.hideAllScreens();
             this.gameState.hideLevelInfo();
+            
+            // Skip any ongoing celebrations
+            if (this.gameState.hasWon && this.nextLevelCallback) {
+                this.nextLevelCallback(true);
+            }
         });
         
         this.levelInfoScreen.appendChild(this.levelTitle);
@@ -186,9 +323,9 @@ export default class UIManager {
         
         nextLevelButton.addEventListener('click', () => {
             this.hideAllScreens();
-            // Call the next level callback
+            // Call the next level callback with skipCelebration=true
             if (this.nextLevelCallback) {
-                this.nextLevelCallback();
+                this.nextLevelCallback(true);
             }
         });
         
@@ -206,7 +343,7 @@ export default class UIManager {
         restartLevelButton.addEventListener('click', () => {
             this.hideAllScreens();
             if (this.resetCallback) {
-                this.resetCallback();
+                this.resetCallback(true);
             }
         });
         
@@ -251,7 +388,7 @@ export default class UIManager {
             // Reset to first level and restart
             this.gameState.setCurrentLevel(0);
             if (this.resetCallback) {
-                this.resetCallback();
+                this.resetCallback(true);
             }
         });
         
@@ -306,12 +443,28 @@ export default class UIManager {
         this.levelInfoScreen.style.display = 'none';
         this.levelCompletedScreen.style.display = 'none';
         this.gameCompletedScreen.style.display = 'none';
+        this.startScreen.style.display = 'none';
+        this.pauseScreen.style.display = 'none';
     }
 
     /**
      * Update UI based on game state
      */
     update(levelSystem) {
+        // Handle start screen
+        if (!this.gameState.gameStarted) {
+            this.showStartScreen();
+            return;
+        }
+        
+        // Handle pause screen
+        if (this.gameState.isPaused) {
+            this.showPauseScreen();
+            return;
+        } else {
+            this.hidePauseScreen();
+        }
+        
         // Handle level info display
         if (this.gameState.showLevelInfo && levelSystem) {
             this.showLevelInfoScreen(
@@ -346,5 +499,21 @@ export default class UIManager {
      */
     setNextLevelCallback(callback) {
         this.nextLevelCallback = callback;
+    }
+
+    showStartScreen() {
+        this.startScreen.style.display = 'block';
+    }
+    
+    hideStartScreen() {
+        this.startScreen.style.display = 'none';
+    }
+    
+    showPauseScreen() {
+        this.pauseScreen.style.display = 'block';
+    }
+    
+    hidePauseScreen() {
+        this.pauseScreen.style.display = 'none';
     }
 } 

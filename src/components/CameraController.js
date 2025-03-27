@@ -66,6 +66,13 @@ export default class CameraController {
         this.celebration.ballPosition = ballPosition.clone();
         this.celebration.goalPosition = goalPosition.clone();
     }
+    
+    /**
+     * Stop any ongoing celebration animation
+     */
+    stopCelebration() {
+        this.celebration.active = false;
+    }
 
     /**
      * Update camera position based on game state

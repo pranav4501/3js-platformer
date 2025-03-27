@@ -48,7 +48,8 @@ export default class Game {
             KeyW: false,
             KeyS: false,
             KeyA: false,
-            KeyD: false
+            KeyD: false,
+            KeyP: false
         };
         
         // Game properties
@@ -266,6 +267,13 @@ export default class Game {
             if (this.keys[e.code] !== undefined) {
                 this.keys[e.code] = true;
             }
+            
+            // Handle pause key (P or Escape)
+            if (e.code === 'KeyP' || e.code === 'Escape') {
+                if (this.gameState.gameStarted && !this.gameState.hasWon && !this.gameState.hasLost) {
+                    this.gameState.togglePause();
+                }
+            }
         });
         
         window.addEventListener('keyup', (e) => {
@@ -401,7 +409,13 @@ export default class Game {
     /**
      * Go to the next level
      */
-    nextLevel() {
+    nextLevel(skipCelebration = false) {
+        // Skip any ongoing camera celebration if requested
+        if (skipCelebration) {
+            this.cameraController.stopCelebration();
+            this.soundManager.stopCelebrationSounds();
+        }
+        
         // Check if there are more levels
         if (this.levelSystem.nextLevel()) {
             // Stop all sounds, especially the goal sound
@@ -438,10 +452,11 @@ export default class Game {
     /**
      * Reset the game state (restart level)
      */
-    reset() {
-        // Stop all sounds, especially the goal sound
-        if (this.soundManager) {
-            this.soundManager.stopAllSounds();
+    reset(skipCelebration = false) {
+        // Stop any ongoing celebrations if requested
+        if (skipCelebration) {
+            this.cameraController.stopCelebration();
+            this.soundManager.stopCelebrationSounds();
         }
         
         // Reset game state

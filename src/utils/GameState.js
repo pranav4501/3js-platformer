@@ -3,7 +3,7 @@
  */
 export default class GameState {
     constructor() {
-        this.isPlaying = true;
+        this.isPlaying = false;
         this.hasWon = false;
         this.hasLost = false;
         this.isFalling = false;
@@ -16,10 +16,12 @@ export default class GameState {
         this.levelCompleted = false;
         this.gameCompleted = false;
         this.showLevelInfo = true;
+        this.gameStarted = false;
+        this.isPaused = false;
     }
 
     reset() {
-        this.isPlaying = true;
+        this.isPlaying = this.gameStarted && !this.isPaused;
         this.hasWon = false;
         this.hasLost = false;
         this.isFalling = false;
@@ -29,6 +31,32 @@ export default class GameState {
         this.goalSoundPlayed = false;
         this.levelCompleted = false;
         this.showLevelInfo = true;
+    }
+
+    startGame() {
+        this.gameStarted = true;
+        this.isPlaying = !this.isPaused;
+    }
+
+    pauseGame() {
+        if (this.gameStarted && !this.hasWon && !this.hasLost) {
+            this.isPaused = true;
+            this.isPlaying = false;
+        }
+    }
+
+    resumeGame() {
+        if (this.gameStarted && !this.hasWon && !this.hasLost) {
+            this.isPaused = false;
+            this.isPlaying = true;
+        }
+    }
+
+    togglePause() {
+        if (this.gameStarted && !this.hasWon && !this.hasLost) {
+            this.isPaused = !this.isPaused;
+            this.isPlaying = !this.isPaused;
+        }
     }
 
     startFalling() {
@@ -75,5 +103,6 @@ export default class GameState {
     
     hideLevelInfo() {
         this.showLevelInfo = false;
+        this.isPlaying = this.gameStarted && !this.isPaused;
     }
 } 
