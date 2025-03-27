@@ -49,7 +49,13 @@ export default class BallPhysics {
     /**
      * Update ball physics
      */
-    update(ball, deltaTime) {
+    update(ball, deltaTime, gameState) {
+        // Handle falling state specially
+        if (gameState && gameState.isFalling) {
+            this.handleFallingState(ball, deltaTime, gameState);
+            return;
+        }
+
         // Apply gravity
         const gravityForce = this.acceleration.clone().multiplyScalar(deltaTime);
         this.velocity.add(gravityForce);
@@ -71,6 +77,39 @@ export default class BallPhysics {
         
         // Handle ground collision
         this.handleGroundCollision(ball);
+    }
+
+    /**
+     * Handle physics during falling state
+     */
+    handleFallingState(ball, deltaTime, gameState) {
+        // Calculate how long we've been falling
+        const currentTime = Date.now();
+        const fallingTime = (currentTime - gameState.fallStartTime) / 1000;
+        
+        // After 1.0 seconds of falling, end the game (reduced from 1.5)
+        if (fallingTime >= 0.5) {
+            gameState.gameLost();
+            return;
+        }
+        
+        // Apply gravity (increased for dramatic effect)
+        this.velocity.y += this.acceleration.y * 1.5 * deltaTime;
+        
+        // Apply air friction but keep the fall looking dramatic
+        this.velocity.x *= this.airFriction;
+        this.velocity.z *= this.airFriction;
+        
+        // Update position with all velocity components
+        const movement = this.velocity.clone().multiplyScalar(deltaTime);
+        ball.position.add(movement);
+        
+        // Add dramatic rotation while falling
+        ball.rotation.x += deltaTime * 5;
+        ball.rotation.z += deltaTime * 3;
+        
+        // Disable ground collision during falling state
+        this.onGround = false;
     }
 
     /**
@@ -105,6 +144,11 @@ export default class BallPhysics {
      * Handle collision with the ground
      */
     handleGroundCollision(ball) {
+        // Skip ground collision if we're in falling state
+        if (ball.userData && ball.userData.isFalling) {
+            return;
+        }
+        
         // Default floor Y position 
         const floorY = -0.49;
         

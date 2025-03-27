@@ -9,14 +9,16 @@ export default class EffectsManager {
         this.particles = null;
         this.goalParticles = null;
         
-        this.createParticleSystem();
-        this.createGoalParticleSystem();
+        // Comment out particle system creation for now
+        // this.createParticleSystem();
+        // this.createGoalParticleSystem();
     }
 
     /**
      * Create the celebration particle system
      */
     createParticleSystem() {
+        /* Commented out as requested
         const particleCount = 100;
         const particleGeometry = new THREE.BufferGeometry();
         const particlePositions = new Float32Array(particleCount * 3); // xyz
@@ -51,12 +53,14 @@ export default class EffectsManager {
         this.particles = new THREE.Points(particleGeometry, particleMaterial);
         this.particles.visible = false; // Hide initially
         this.scene.add(this.particles);
+        */
     }
     
     /**
      * Create goal-specific particle system
      */
     createGoalParticleSystem() {
+        /* Commented out as requested
         const particleCount = 200;
         const particleGeometry = new THREE.BufferGeometry();
         const particlePositions = new Float32Array(particleCount * 3);
@@ -122,24 +126,30 @@ export default class EffectsManager {
         };
         
         this.scene.add(this.goalParticles);
+        */
     }
 
     /**
      * Show celebration particles at the goal
      */
     celebrateGoal(goalPosition) {
+        // Commented out as requested
+        /*
         // Show particles
         this.particles.visible = true;
         
         // Position particles at the goal
         this.particles.position.copy(goalPosition);
         this.particles.position.y = 1;
+        */
     }
     
     /**
      * Show goal effect particles
      */
     showGoalEffect(position) {
+        // Commented out as requested
+        /*
         // Show the goal particles
         this.goalParticles.visible = true;
         
@@ -157,20 +167,26 @@ export default class EffectsManager {
         setTimeout(() => {
             this.goalParticles.visible = false;
         }, this.goalParticles.userData.duration);
+        */
     }
 
     /**
      * Hide celebration particles
      */
     hideParticles() {
-        this.particles.visible = false;
-        this.goalParticles.visible = false;
+        if (this.particles) {
+            this.particles.visible = false;
+        }
+        if (this.goalParticles) {
+            this.goalParticles.visible = false;
+        }
     }
 
     /**
      * Update particle animations
      */
     updateParticles(deltaTime) {
+        /* Commented out as requested
         if (this.particles && this.particles.visible) {
             this.particles.rotation.y += deltaTime * 0.5;
             
@@ -209,5 +225,6 @@ export default class EffectsManager {
             // Add rotation for visual appeal
             this.goalParticles.rotation.y += deltaTime * 0.2;
         }
+        */
     }
 } 
