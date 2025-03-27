@@ -12,6 +12,10 @@ export default class GameState {
         this.lastCameraLookAt = null;   // Store look target when game ends
         this.obstacles = [];
         this.goalSoundPlayed = false;
+        this.currentLevel = 0;
+        this.levelCompleted = false;
+        this.gameCompleted = false;
+        this.showLevelInfo = true;
     }
 
     reset() {
@@ -23,6 +27,8 @@ export default class GameState {
         this.lastCameraPosition = null;
         this.lastCameraLookAt = null;
         this.goalSoundPlayed = false;
+        this.levelCompleted = false;
+        this.showLevelInfo = true;
     }
 
     startFalling() {
@@ -33,6 +39,7 @@ export default class GameState {
     gameWon() {
         this.hasWon = true;
         this.isPlaying = false;
+        this.levelCompleted = true;
     }
 
     gameLost() {
@@ -43,5 +50,30 @@ export default class GameState {
 
     setObstacles(obstacles) {
         this.obstacles = obstacles;
+    }
+    
+    setCurrentLevel(level) {
+        this.currentLevel = level;
+    }
+    
+    getCurrentLevel() {
+        return this.currentLevel;
+    }
+    
+    levelComplete() {
+        this.levelCompleted = true;
+    }
+    
+    nextLevel() {
+        this.currentLevel++;
+        this.reset();
+    }
+    
+    completeGame() {
+        this.gameCompleted = true;
+    }
+    
+    hideLevelInfo() {
+        this.showLevelInfo = false;
     }
 } 

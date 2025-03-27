@@ -11,6 +11,26 @@ export default class CameraController {
         
         // Store the default camera position
         this.defaultPosition = new THREE.Vector3(0, 5, 10);
+        
+        // Camera shake properties
+        this.cameraShake = {
+            active: false,
+            intensity: 0,
+            duration: 0,
+            startTime: 0
+        };
+        
+        // Celebration camera properties
+        this.celebration = {
+            active: false,
+            startTime: 0,
+            duration: 5000, // 5 seconds
+            orbitSpeed: 0.5,
+            orbitRadius: 8,
+            orbitAngle: 0,
+            ballPosition: null,
+            goalPosition: null
+        };
     }
 
     /**
@@ -28,16 +48,39 @@ export default class CameraController {
         if (this.target) {
             this.camera.lookAt(this.target.position);
         }
+        
+        // Reset camera shake
+        this.cameraShake.active = false;
+        
+        // Reset celebration
+        this.celebration.active = false;
+    }
+    
+    /**
+     * Start a camera celebration animation
+     */
+    startCelebration(ballPosition, goalPosition) {
+        this.celebration.active = true;
+        this.celebration.startTime = Date.now();
+        this.celebration.orbitAngle = 0;
+        this.celebration.ballPosition = ballPosition.clone();
+        this.celebration.goalPosition = goalPosition.clone();
     }
 
     /**
      * Update camera position based on game state
      */
-    update(gameState, deltaTime, collisionSystem) {
+    update(deltaTime, gameState) {
         if (!this.target) return;
         
+        // Handle celebration camera
+        if (this.celebration.active) {
+            this.handleCelebrationCamera(deltaTime);
+            return;
+        }
+        
         // If game is over, keep camera fixed at the last position
-        if (gameState.hasLost && gameState.lastCameraPosition) {
+        if (!gameState.isPlaying && gameState.lastCameraPosition) {
             this.camera.position.copy(gameState.lastCameraPosition);
             this.camera.lookAt(gameState.lastCameraLookAt);
             return;
@@ -50,7 +93,7 @@ export default class CameraController {
         }
         
         // Normal gameplay - camera follows the ball from behind
-        this.handleGameplayCamera(collisionSystem);
+        this.handleGameplayCamera(deltaTime);
     }
 
     /**
@@ -70,23 +113,45 @@ export default class CameraController {
         this.camera.position.copy(cameraPosition);
         this.camera.lookAt(this.target.position);
     }
+    
+    /**
+     * Handle celebration camera movement
+     */
+    handleCelebrationCamera(deltaTime) {
+        const elapsed = Date.now() - this.celebration.startTime;
+        
+        // End celebration after duration
+        if (elapsed >= this.celebration.duration) {
+            this.celebration.active = false;
+            return;
+        }
+        
+        // Calculate a midpoint between ball and goal for camera to orbit around
+        const orbitCenter = new THREE.Vector3();
+        orbitCenter.copy(this.celebration.ballPosition);
+        
+        // Increase the angle
+        this.celebration.orbitAngle += deltaTime * this.celebration.orbitSpeed;
+        
+        // Calculate camera position in orbit
+        const cameraPosition = new THREE.Vector3();
+        cameraPosition.x = orbitCenter.x + Math.cos(this.celebration.orbitAngle) * this.celebration.orbitRadius;
+        cameraPosition.z = orbitCenter.z + Math.sin(this.celebration.orbitAngle) * this.celebration.orbitRadius;
+        cameraPosition.y = 3 + Math.sin(elapsed / 500) * 1; // Slight up and down movement
+        
+        // Set camera position and look at the midpoint
+        this.camera.position.lerp(cameraPosition, this.smoothFactor * 2);
+        this.camera.lookAt(orbitCenter);
+    }
 
     /**
      * Handle camera during normal gameplay
      */
-    handleGameplayCamera(collisionSystem) {
+    handleGameplayCamera(deltaTime) {
         let cameraPosition = new THREE.Vector3();
         cameraPosition.copy(this.target.position);
         cameraPosition.z += 7; // Camera is 7 units behind the ball
         cameraPosition.y += 3; // Camera is 3 units above the ball
-        
-        // Apply camera shake if active
-        if (collisionSystem && collisionSystem.cameraShake) {
-            cameraPosition = collisionSystem.updateCameraShake(
-                this.camera, 
-                cameraPosition
-            );
-        }
         
         // Set the camera position with smoothing (lerp)
         this.camera.position.lerp(cameraPosition, this.smoothFactor);
