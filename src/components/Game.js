@@ -24,6 +24,10 @@ export default class Game {
         // Initialize game state
         this.gameState = new GameState();
         
+        // Set game as started to skip the start screen since we're coming from home screen
+        this.gameState.gameStarted = true;
+        this.gameState.showLevelInfo = true;
+        
         // Initialize Three.js components
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x87ceeb); // Sky blue background
