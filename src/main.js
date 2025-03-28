@@ -1,5 +1,10 @@
 import Game from './components/Game.js';
+import HomeScreen from './components/HomeScreen.js';
 
-// Initialize the game
-const game = new Game(); 
+// First show the home screen
+const homeScreen = new HomeScreen(() => {
+    // This callback will be called when the Play button is clicked
+    // Initialize the game after hiding the home screen
+    const game = new Game();
+}); 
 
